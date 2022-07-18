@@ -4,26 +4,108 @@ import { LinkIcon, PhotographIcon } from "@heroicons/react/outline";
 import { useForm } from "react-hook-form";
 
 import Avatar from "./Avatar";
+import { useMutation } from "@apollo/client";
+import { ADD_POST, ADD_SUBREDDIT } from "../graphql/mutations";
+import client from "../apollo-client";
+import { GET_SUBREDDIT_BY_TOPIC } from "../graphql/queries";
+import toast from "react-hot-toast";
 
 type FormData = {
     postTitle: string;
     postBody: string;
     postImage: string;
-    subrreddit: string;
+    subreddit: string;
 };
 
 function Postbox() {
     const { data: session } = useSession();
+    const [addPost] = useMutation(ADD_POST);
+    const [addSubreddit] = useMutation(ADD_SUBREDDIT);
     const [imageBoxOpen, setImageBoxOpen] = useState<boolean>(false);
     const {
         register,
         handleSubmit,
+        setValue,
         watch,
         formState: { errors },
     } = useForm<FormData>();
 
     const onSubmit = handleSubmit(async (formData) => {
         console.log(formData);
+        const notification = toast.loading("Creating new post...");
+        try {
+            // QUERY for the subreddti
+            const {
+                data: { getSubredditListByTopic },
+            } = await client.query({
+                query: GET_SUBREDDIT_BY_TOPIC,
+                variables: {
+                    topic: formData.subreddit,
+                },
+            });
+
+            const subredditExists = getSubredditListByTopic.length > 0;
+
+            if (!subredditExists) {
+                // create the subreddit
+                console.log("CREATING NEW SUBREDDIT");
+                const {
+                    data: { insertSubreddit: newSubreddit },
+                } = await addSubreddit({
+                    variables: {
+                        topic: formData.subreddit,
+                    },
+                });
+
+                console.log("Creating post...", formData);
+                const image = formData.postImage || "";
+
+                const {
+                    data: { insertPost: newPost },
+                } = await addPost({
+                    variables: {
+                        body: formData.postBody,
+                        image,
+                        subreddit_id: newSubreddit.id,
+                        title: formData.postTitle,
+                        username: session?.user?.name,
+                    },
+                });
+                console.log("NEW POST CREATED", newPost);
+            } else {
+                // use existing subreddit
+                console.log("USING EXISTING SUBREDDIT");
+                console.log(getSubredditListByTopic);
+
+                const image = formData.postImage || "";
+
+                const {
+                    data: { insertPost: newPost },
+                } = await addPost({
+                    variables: {
+                        body: formData.postBody,
+                        image,
+                        subreddit_id: getSubredditListByTopic[0].id,
+                        title: formData.postTitle,
+                        username: session?.user?.name,
+                    },
+                });
+                console.log("NEW POST CREATED", newPost);
+            }
+            toast.success("New Post Created.", {
+                id: notification,
+            });
+            // POST ADDED
+            setValue("postTitle", "");
+            setValue("postBody", "");
+            setValue("postImage", "");
+            setValue("subreddit", "");
+        } catch (err) {
+            toast.error("Whoops Something Went Wrong", {
+                id: notification,
+            });
+            console.log(err);
+        }
     });
 
     return (
@@ -70,7 +152,7 @@ function Postbox() {
                     <div className="flex items-center">
                         <p className="min-w-[90px]">Subreddit</p>
                         <input
-                            {...register("subrreddit", { required: true })}
+                            {...register("subreddit", { required: true })}
                             className="m-2 flex-1 bg-blue-50 p-2 outline-none"
                             type="text"
                             placeholder="e.g ReactJS"
@@ -96,7 +178,7 @@ function Postbox() {
                                     - A Post title is required
                                 </p>
                             )}
-                            {errors.subrreddit?.type === "required" && (
+                            {errors.subreddit?.type === "required" && (
                                 <p className="text-red-500">
                                     - A Subreddit is required
                                 </p>
