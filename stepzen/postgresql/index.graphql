@@ -14,12 +14,35 @@ type Post {
     subreddit_id: ID
     title: String
     username: String
+    subreddit: [Subreddit]
+        @materializer(
+            query: "getSubredditListById"
+            arguments: [{ name: "id", field: "subreddit_id" }]
+        )
+    comments: [Comment]
+        @materializer(
+            query: "getCommentByPostId"
+            arguments: [{ name: "post_id", field: "id" }]
+        )
+    votes: [Vote]
+        @materializer(
+            query: "getVotesByPostID"
+            arguments: [{ name: "post_id", field: "id" }]
+        )
 }
 
 type Subreddit {
     created_at: DateTime
     id: ID!
     topic: String
+}
+
+type Vote {
+    created_at: DateTime
+    id: ID!
+    post_id: ID
+    upvote: Int
+    username: String
 }
 
 type Query {
@@ -45,11 +68,11 @@ type Query {
     In this example, a single query parameter is passed. If the request to the DB will
     return at most one value you can remove the square brackets from the result.
     """
-    getCommentByPost_id(post_id: ID!): [Comment]
+    getCommentByPostId(post_id: ID!): [Comment]
         @dbquery(
             type: "postgresql"
             query: """
-            select * from "public"."comment" where "post_id" = $1
+            select * from "comment" where "post_id" = $1
             """
             configuration: "postgresql_config"
         )
@@ -65,6 +88,17 @@ type Query {
             """
             configuration: "postgresql_config"
         )
+
+    getVotesByPostID(post_id: ID!): [Vote]
+        @dbquery(
+            type: "postgresql"
+            query: """
+            select * from "vote" where "post_id" = $1
+            order by "created_at" desc
+            """
+            configuration: "postgresql_config"
+        )
+
     getPostList: [Post]
         @dbquery(
             type: "postgresql"
@@ -87,6 +121,15 @@ type Query {
             schema: "public"
             query: """
             select * from "subreddit" where "topic" = $1
+            """
+            configuration: "postgresql_config"
+        )
+    getSubredditListById(id: ID!): [Subreddit]
+        @dbquery(
+            type: "postgresql"
+            schema: "public"
+            query: """
+            select * from "subreddit" where "id" = $1
             """
             configuration: "postgresql_config"
         )
