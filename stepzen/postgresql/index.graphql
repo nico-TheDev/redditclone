@@ -26,7 +26,7 @@ type Post {
         )
     votes: [Vote]
         @materializer(
-            query: "getVotesByPostID"
+            query: "getVotesByPostId"
             arguments: [{ name: "post_id", field: "id" }]
         )
 }
@@ -89,12 +89,21 @@ type Query {
             configuration: "postgresql_config"
         )
 
-    getVotesByPostID(post_id: ID!): [Vote]
+    getVotesByPostId(post_id: ID!): [Vote]
         @dbquery(
             type: "postgresql"
             query: """
             select * from "vote" where "post_id" = $1
             order by "created_at" desc
+            """
+            configuration: "postgresql_config"
+        )
+
+    getPostByPostId(post_id: ID!): Post
+        @dbquery(
+            type: "postgresql"
+            query: """
+            select * from "post" where "post"."id" = $1
             """
             configuration: "postgresql_config"
         )
