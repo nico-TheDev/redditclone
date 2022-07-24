@@ -52,7 +52,6 @@ function PostPage() {
         setValue("comment", "");
         toast.success("Comment Posted!", { id: notification });
     };
-    console.log(data);
 
     return (
         <div className="mx-auto max-w-5xl my-7">
@@ -79,6 +78,7 @@ function PostPage() {
                     />
 
                     <button
+                        disabled={!session}
                         type="submit"
                         className="rounded-full bg-red-500 text-white font-semibold disabled:bg-gray-200 p-3"
                     >

@@ -55,8 +55,6 @@ function Post({ post }: Props) {
         );
     }
 
-    console.log(error);
-
     const upvote = async (isUpvote: boolean) => {
         if (!session) {
             toast.error("Sign in first before voting.");
