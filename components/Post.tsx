@@ -27,7 +27,7 @@ function Post({ post }: Props) {
     const [vote, setVote] = useState<boolean | undefined>();
     const { data: session } = useSession();
 
-    const { data, loading, error } = useQuery(GET_ALL_VOTES_BY_POST_ID, {
+    const { data, error } = useQuery(GET_ALL_VOTES_BY_POST_ID, {
         variables: {
             post_id: post?.id,
         },
@@ -46,14 +46,6 @@ function Post({ post }: Props) {
 
         setVote(vote);
     }, [data]);
-
-    if (!post) {
-        return (
-            <div className="flex w-full items-center justify-center p-10 text-xl">
-                <Jelly size={50} speed={0.9} color="#ff4501" />
-            </div>
-        );
-    }
 
     const upvote = async (isUpvote: boolean) => {
         if (!session) {
@@ -88,6 +80,14 @@ function Post({ post }: Props) {
 
         return displayNumber;
     };
+
+    if (!post) {
+        return (
+            <div className="flex w-full items-center justify-center p-10 text-xl">
+                <Jelly size={50} speed={0.9} color="#ff4501" />
+            </div>
+        );
+    }
 
     return (
         <Link href={`/post/${post.id}`}>
